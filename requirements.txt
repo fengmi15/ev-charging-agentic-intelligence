@@ -1,0 +1,11 @@
+numpy
+pandas
+matplotlib
+plotly
+streamlit
+folium
+streamlit-folium
+confluent-kafka
+fastmcp
+anthropic
+python-dotenv

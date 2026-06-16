@@ -1,0 +1,46 @@
+# Python
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Environment
+.env
+*.env
+
+# Generated data (large files — regenerate with simulator)
+data/stations.csv
+data/telemetry_raw.csv
+data/telemetry_faulted.csv
+data/reports/
+
+# Keep data folder structure
+!data/.gitkeep
+!data/reports/.gitkeep
+
+# Notebooks checkpoints
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Docker override
+docker-compose.override.yml
+
+# Streamlit
+.streamlit/secrets.toml
