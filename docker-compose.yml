@@ -1,0 +1,97 @@
+services:
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    container_name: ev_zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: ev_kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_LOG_RETENTION_HOURS: 24
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  producer:
+    build: .
+    container_name: ev_producer
+    depends_on:
+      kafka:
+        condition: service_healthy
+    volumes:
+      - ./data:/app/data
+    environment:
+      - KAFKA_BROKER=kafka:29092
+    command: python src/producer.py --speed 60
+    restart: on-failure
+
+  stream_agent:
+    build: .
+    container_name: ev_stream_agent
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      - KAFKA_BROKER=kafka:29092
+    command: python src/stream_agent.py
+    restart: on-failure
+
+  anomaly_agent:
+    build: .
+    container_name: ev_anomaly_agent
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      - KAFKA_BROKER=kafka:29092
+    command: python src/anomaly_agent.py
+    restart: on-failure
+
+  report_agent:
+    build: .
+    container_name: ev_report_agent
+    depends_on:
+      kafka:
+        condition: service_healthy
+    volumes:
+      - ./data:/app/data
+    env_file:
+      - .env
+    environment:
+      - KAFKA_BROKER=kafka:29092
+    command: python src/report_agent.py
+    restart: on-failure
+
+  dashboard:
+    build: .
+    container_name: ev_dashboard
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - KAFKA_BROKER=kafka:29092
+    command: streamlit run dashboard.py --server.address=0.0.0.0
+    restart: on-failure
